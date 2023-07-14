@@ -31,6 +31,7 @@ static int __init hellodriver_init(void)
 
     pr_info("%s : Device number <major> <minor> = %d:%d",__func__,MAJOR(device_number),MINOR(device_number));
 
+	/*Initialize cdev structure*/    
     cdev_init(&pcd_cdev,&pcd_fops);
 
     /*Registering device driver with VFS*/
@@ -79,6 +80,9 @@ ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * 
 
     /*Update the current file position*/
     *f_pos += count;
+
+    pr_info("Number of bytes successfully read = %zu\n",count);
+    pr_info("Updated file position: %lld",*f_pos);
 
     /*Return number of bytes which were successfully read*/
     return count;
@@ -148,6 +152,20 @@ loff_t pcd_lseek(struct file * filp, loff_t offset, int whence)
     }
 
     return filp->f_pos;
+}
+
+int pcd_open(struct inode * inode, struct file * filp)
+{
+	pr_info("Open requested\n");
+
+	return 0;
+
+}
+
+int pcd_release(struct inode * inode, struct file * filp)
+{
+
+	return 0;
 }
 
 module_init(hellodriver_init);
