@@ -108,7 +108,7 @@ ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * 
     /*Copy to user*/
     /*Note: Global variables access should be serialized to prevent race conditions*/
     /*copy_to_user should return zero for success*/
-    if(copy_to_user(buff,&pcdev_data->buffer+(*f_pos),count))
+    if(copy_to_user(buff,pcdev_data->buffer+(*f_pos),count))
     {
         return -EFAULT;
     }
@@ -147,7 +147,7 @@ ssize_t pcd_write(struct file * filp, const char __user * buff, size_t count, lo
 	}
 
     /*Copy from user*/
-    if (copy_from_user(&pcdev_data->buffer[*f_pos],buff,count))
+    if (copy_from_user(pcdev_data->buffer+(*f_pos),buff,count))
     {
         return -EFAULT;
     }
@@ -224,7 +224,7 @@ int check_permission(int dev_perm, int acc_mode)
 	{
 		return 0;
 	}
-	if ((dev_perm == WRONLY) && ( (acc_mode & FMODE_WRITE)) && !(acc_mode & FMODE_READ))
+	if ((dev_perm == WRONLY) && ( (acc_mode & FMODE_WRITE) && !(acc_mode & FMODE_READ)))
 	{
 		return 0;
 	}
@@ -237,6 +237,8 @@ int pcd_open(struct inode * inode, struct file * filp)
 	int minor_n;
 	struct pcdev_private_data * pcdev_data;
 
+	pr_info("Open requested\n");
+	
 	/*Check on which device file open was attempted by the user space*/
 	minor_n = MINOR(inode->i_rdev);
 	pr_info("Minor access = %d\n",minor_n);
@@ -252,7 +254,6 @@ int pcd_open(struct inode * inode, struct file * filp)
 	
 	(!ret) ? pr_info("Open is successful.\n") : pr_info("Open was unsuccessful.\n");
 
-	pr_info("Open requested\n");
 
 	return ret;
 
