@@ -13,6 +13,9 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mohamed Ahmed");
 MODULE_DESCRIPTION("Pseudo character driver that handles n devices");
 
+#undef pr_fmt
+#define pr_fmt(fmt) "%s : " fmt,__func__
+
 #define NO_OF_DEVICES 4
 
 #define MEM_SIZE_MAX_PCDEV1 1024
@@ -20,6 +23,10 @@ MODULE_DESCRIPTION("Pseudo character driver that handles n devices");
 #define MEM_SIZE_MAX_PCDEV3 1024
 #define MEM_SIZE_MAX_PCDEV4 512
 
+/*Permissions*/
+#define RDONLY 0x01
+#define WRONLY 0x10
+#define RDWR 0x11
 
 /*pseudo device's memory*/
 char device_buffer_pcdev1[MEM_SIZE_MAX_PCDEV1];
@@ -59,7 +66,7 @@ struct pcdrv_private_data pcdrv_data =
 			.buffer = device_buffer_pcdev1,
 			.size = MEM_SIZE_MAX_PCDEV1,
 			.serial_number = "PCDEV1XYZ123",
-			.perm = 0x1 /*Read-only*/
+			.perm = RDONLY /*Read-only*/
 			
 		},
 		[1] =
@@ -67,7 +74,7 @@ struct pcdrv_private_data pcdrv_data =
 			.buffer = device_buffer_pcdev2,
 			.size = MEM_SIZE_MAX_PCDEV2,
 			.serial_number = "PCDEV2XYZ123",
-			.perm = 0x11 /*Read-write*/
+			.perm = RDWR /*Read-write*/
 			
 		},
 		[2] =
@@ -75,7 +82,7 @@ struct pcdrv_private_data pcdrv_data =
 			.buffer = device_buffer_pcdev3,
 			.size = MEM_SIZE_MAX_PCDEV3,
 			.serial_number = "PCDEV3XYZ123",
-			.perm = 0x01 /*Ready-only*/
+			.perm = RDONLY /*Ready-only*/
 
 		},
 		[3] =
@@ -83,8 +90,7 @@ struct pcdrv_private_data pcdrv_data =
 			.buffer = device_buffer_pcdev4,
 			.size = MEM_SIZE_MAX_PCDEV4,
 			.serial_number = "PCDEV3XYZ123",
-			.perm = 0x01
-		
+			.perm = RDONLY	
 		}
 	},
 	.total_devices = NO_OF_DEVICES,
@@ -210,10 +216,6 @@ loff_t pcd_lseek(struct file * filp, loff_t offset, int whence)
 	return 0;
 }
 
-#define RDONLY 0x01
-#define WRONLY 0x10
-#define RDWR 0x11
-
 int check_permission(int dev_perm, int acc_mode)
 {
 	if (dev_perm == RDWR)
@@ -315,7 +317,7 @@ static int __init hellodriver_init(void)
 				goto cdev_del;
 			}
 
-			printk("Hello from module.\n");
+			pr_info("Hello from module.\n");
 
 			/*Populate SYSFS with device information*/
 			pcdrv_data.device_pcd = device_create(pcdrv_data.class_pcd,NULL,pcdrv_data.device_number+dev_index,NULL,"pcdev-%d",dev_index+1);
@@ -327,7 +329,7 @@ static int __init hellodriver_init(void)
 			
 			}	
 	}
-	printk("Module init was successful.\n");
+	pr_info("Module init was successful.\n");
 	return 0;
 cdev_del:	
 class_del:
