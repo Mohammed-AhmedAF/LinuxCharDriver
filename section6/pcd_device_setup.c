@@ -25,6 +25,10 @@ struct pcdev_platform_data pcdev_pdata[2] =
 	
 };
 
+void pcdev_release(struct device * dev)
+{
+	pr_info("Device released.\n");
+}
 
 /*Create 2 platform devices*/
 struct platform_device platform_pcdev_1 = {
@@ -33,6 +37,7 @@ struct platform_device platform_pcdev_1 = {
 	.dev = 
 	{
 		.platform_data = &pcdev_pdata[0],
+		.release = pcdev_release
 	}
 };
 
@@ -43,6 +48,7 @@ struct platform_device platform_pcdev_2 = {
 	.dev = 
 	{
 		.platform_data = &pcdev_pdata[1],
+		.release = pcdev_release
 	}
 
 };
@@ -53,6 +59,8 @@ static int __init pcdev_platform_init(void)
 	platform_device_register(&platform_pcdev_1);
 	platform_device_register(&platform_pcdev_2);
 
+	pr_info("Module insterted.\n");
+
 	return 0;
 }
 
@@ -62,7 +70,7 @@ static void __exit pcdev_platform_exit(void)
 	platform_device_unregister(&platform_pcdev_1);
 	platform_device_unregister(&platform_pcdev_2);	
 
-
+	pr_info("Module exit.\n");
 }
 
 module_init(pcdev_platform_init);
