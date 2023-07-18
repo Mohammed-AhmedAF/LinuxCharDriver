@@ -1,3 +1,4 @@
+#kbuild variable, compile as a dyanamically loadable kernel module
 obj-m += hello.o
 
 all:
