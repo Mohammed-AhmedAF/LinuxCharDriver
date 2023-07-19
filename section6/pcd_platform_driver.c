@@ -9,6 +9,7 @@
 #include <linux/uaccess.h>
 #include <linux/errno.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
 #include "platform.h"
 
 MODULE_LICENSE("GPL");
@@ -20,7 +21,7 @@ MODULE_DESCRIPTION("Platform driver");
 /*Device private data structure*/
 struct pcdev_private_data
 {
-	struct pcdev_platform_data pdata;
+	struct pcdev_platform_data plat_data;
 	char * buffer;
 	dev_t dev_num;
 	struct cdev cdev;
@@ -71,9 +72,54 @@ int pcd_release(struct inode * inode, struct file * filp)
 
 int pcd_platform_driver_probe(struct platform_device * pdev)
 {
-	pr_info("A device is detected.\n");
+	int ret;
+	struct pcdev_private_data * dev_data;
+	struct pcdev_platform_data * platform_data;
 
+	/*1. Get platform data*/
+	platform_data = (struct pcdev_platform_data *) dev_get_platdata(&pdev->dev);
+
+	if (IS_ERR(platform_data))
+	{
+		pr_err("Error getting pcdev platform data.\n");
+		ret = PTR_ERR(platform_data);
+		return ret;
+	}
+
+	/*2. Dynamically allocate memory for device private data*/
+	dev_data = kzalloc(sizeof(*dev_data),GFP_KERNEL);
+	if (!dev_data)
+	{
+		pr_err("Cannot allocate memory.\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	dev_data->plat_data.size = platform_data->size;
+	dev_data->plat_data.perm = platform_data->perm;
+	dev_data->plat_data.serial_number = platform_data->serial_number;
+
+	/*Just for debugging*/
+	pr_info("Device serial number: %s\n",dev_data->plat_data.serial_number);
+	pr_info("Device size: %d\n",dev_data->plat_data.size);
+	pr_info("Device permissions: %d",dev_data->plat_data.perm);
+	
+	/*3. Dynamically allocate memory for device buffer using size information 
+	from the platform data*/
+
+	/*4. Get the device number*/
+
+	/*5. Do cdve_init and cdev_add*/
+
+	/*6. Create device file for the detached platform device*/
+
+	/*7. Error handling*/
+
+	pr_info("A device is detected.\n");
 	return 0;
+out:
+	pr_info("Device probe failed.\n");
+	return ret;
 }
 
 /*Called when the device is removed from the system*/
