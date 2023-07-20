@@ -15,6 +15,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mohamed Ahmed");
 MODULE_DESCRIPTION("Platform driver");
+MODULE_INFO(item1,"This is free form info about the platform driver.");
 
 #define MAX_DEVICES 10
 
