@@ -61,10 +61,10 @@ int pcd_open(struct inode * inode, struct file * filp)
 
 }
 
+/*When a platform device is removed from the system or the driver is removed.*/
 int pcd_release(struct inode * inode, struct file * filp)
 {
-
-	return 0;
+		return 0;
 }
 struct file_operations pcd_fops =
  {
@@ -79,9 +79,7 @@ struct file_operations pcd_fops =
 /*Global structure which members will be filled in the init function*/
 struct pcdrv_private_data  pcdrv_data;
 
-
-
-int pcd_platform_driver_probe(struct platform_device * pdev)
+int pcd_platform_driver_probe(struct platform_device * plat_dev)
 {
 	int ret;
 	struct pcdev_private_data * dev_data;
@@ -89,7 +87,7 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 
 	pr_info("Device is detected.\n");
 	/*1. Get platform data*/
-	platform_data = (struct pcdev_platform_data *) dev_get_platdata(&pdev->dev);
+	platform_data = (struct pcdev_platform_data *) dev_get_platdata(&plat_dev->dev);
 
 	if (IS_ERR(platform_data))
 	{
@@ -106,6 +104,9 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 		ret = -ENOMEM;
 		goto dev_data_free;
 	}
+
+	/*Save the device private data pointer in the platform device structure*/
+	dev_set_drvdata(&plat_dev->dev,dev_data);
 
 	dev_data->plat_data.size = platform_data->size;
 	dev_data->plat_data.perm = platform_data->perm;
@@ -127,7 +128,7 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 	}
 
 	/*4. Get the device number*/
-	dev_data->dev_num = pcdrv_data.device_number_base + pdev->id;
+	dev_data->dev_num = pcdrv_data.device_number_base + plat_dev->id;
 
 	/*5. Do cdve_init and cdev_add*/
 	cdev_init(&dev_data->cdev,&pcd_fops);
@@ -140,13 +141,16 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 	}
 
 	/*6. Create device file for the detached platform device*/
-	pcdrv_data.device_pcd = device_create(pcdrv_data.class_pcd,NULL,dev_data->dev_num,NULL,"pcdev-%d",pdev->id);
+	pcdrv_data.device_pcd = device_create(pcdrv_data.class_pcd,NULL,dev_data->dev_num,NULL,"pcdev-%d",plat_dev->id);
 	if (IS_ERR(pcdrv_data.device_pcd))
 	{
 		pr_info("Device creation failed.\n");
 		ret = PTR_ERR(pcdrv_data.device_pcd);
 		goto cdev_del;
 	}
+
+	pcdrv_data.total_devices++;
+
 	/*7. Error handling*/
 	pr_info("Probe is successful.\n");
 	return 0;
@@ -162,8 +166,20 @@ out:
 }
 
 /*Called when the device is removed from the system*/
-int pcd_platform_driver_remove(struct platform_device * pdev)
+int pcd_platform_driver_remove(struct platform_device * plat_dev)
 {
+	struct pcdev_private_data * dev_data = (struct pcdev_private_data *) dev_get_drvdata(&plat_dev->dev);
+	/*1. Remove a device that was created with device create*/
+	device_destroy(pcdrv_data.class_pcd,dev_data->dev_num);
+		
+	/*2. Remove cdev entry from system*/
+	cdev_del(&dev_data->cdev);
+
+	/*3. Free memory held by device*/
+	kfree(dev_data->buffer);
+	kfree(dev_data);
+	
+	pcdrv_data.total_devices--;
 	pr_info("A device is removed.\n");
 	return 0;
 }
@@ -213,6 +229,7 @@ void __exit pcd_platform_driver_exit(void)
 
 	/*Class destroy*/
 	class_destroy(pcdrv_data.class_pcd);
+	
 	/*Unregister device numbers for MAX_DEVICES*/
 	unregister_chrdev_region(pcdrv_data.device_number_base,MAX_DEVICES);
 
