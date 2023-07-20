@@ -36,9 +36,6 @@ struct pcdrv_private_data
 	struct class * class_pcd;
 };
 
-/*Global structure which members will be filled in the init function*/
-struct pcdrv_private_data  pcdrv_data;
-
 loff_t pcd_lseek(struct file * filp, loff_t offset, int whence)
 {
 
@@ -69,6 +66,20 @@ int pcd_release(struct inode * inode, struct file * filp)
 
 	return 0;
 }
+struct file_operations pcd_fops =
+ {
+	.open = pcd_open,
+	.write = pcd_write,
+	.release = pcd_release,
+	.read = pcd_read,
+	.owner = THIS_MODULE
+};
+
+
+/*Global structure which members will be filled in the init function*/
+struct pcdrv_private_data  pcdrv_data;
+
+
 
 int pcd_platform_driver_probe(struct platform_device * pdev)
 {
@@ -76,6 +87,7 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 	struct pcdev_private_data * dev_data;
 	struct pcdev_platform_data * platform_data;
 
+	pr_info("Device is detected.\n");
 	/*1. Get platform data*/
 	platform_data = (struct pcdev_platform_data *) dev_get_platdata(&pdev->dev);
 
@@ -92,7 +104,7 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 	{
 		pr_err("Cannot allocate memory.\n");
 		ret = -ENOMEM;
-		goto out;
+		goto dev_data_free;
 	}
 
 	dev_data->plat_data.size = platform_data->size;
@@ -106,17 +118,44 @@ int pcd_platform_driver_probe(struct platform_device * pdev)
 	
 	/*3. Dynamically allocate memory for device buffer using size information 
 	from the platform data*/
+	dev_data->buffer = kzalloc(dev_data->plat_data.size,GFP_KERNEL);	
+	if (!dev_data->buffer)
+	{
+		pr_info("Can't allocate memory.\n");
+		ret = -ENOMEM;
+		goto out;		
+	}
 
 	/*4. Get the device number*/
+	dev_data->dev_num = pcdrv_data.device_number_base + pdev->id;
 
 	/*5. Do cdve_init and cdev_add*/
+	cdev_init(&dev_data->cdev,&pcd_fops);
+	dev_data->cdev.owner = THIS_MODULE;
+	cdev_add(&dev_data->cdev,dev_data->dev_num,1);
+	if (ret < 0)
+	{
+		pr_err("cdev added failed.\n");
+		goto buffer_del;
+	}
 
 	/*6. Create device file for the detached platform device*/
-
+	pcdrv_data.device_pcd = device_create(pcdrv_data.class_pcd,NULL,dev_data->dev_num,NULL,"pcdev-%d",pdev->id);
+	if (IS_ERR(pcdrv_data.device_pcd))
+	{
+		pr_info("Device creation failed.\n");
+		ret = PTR_ERR(pcdrv_data.device_pcd);
+		goto cdev_del;
+	}
 	/*7. Error handling*/
-
-	pr_info("A device is detected.\n");
+	pr_info("Probe is successful.\n");
 	return 0;
+cdev_del:
+	cdev_del(&dev_data->cdev);	
+buffer_del:
+	kfree(dev_data->buffer);
+dev_data_free:
+	kfree(dev_data);
 out:
 	pr_info("Device probe failed.\n");
 	return ret;
@@ -129,15 +168,6 @@ int pcd_platform_driver_remove(struct platform_device * pdev)
 	return 0;
 }
 
-
-struct file_operations pcd_fops =
- {
-	.open = pcd_open,
-	.write = pcd_write,
-	.release = pcd_release,
-	.read = pcd_read,
-	.owner = THIS_MODULE
-};
 
 struct platform_driver pcd_platform_driver = 
 {
