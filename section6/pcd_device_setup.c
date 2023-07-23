@@ -6,8 +6,10 @@
 #define WRONLY 0x10
 #define RDWR 0x11
 
+void pcdev_release(struct device * dev);
+
 /*Create 2 platform data*/
-struct pcdev_platform_data pcdev_pdata[2] =
+struct pcdev_platform_data pcdev_pdata[4] =
 {
 	[0] =	
 	{
@@ -21,14 +23,21 @@ struct pcdev_platform_data pcdev_pdata[2] =
 		.size = 1024,
 		.perm = RDWR,
 		.serial_number = "PCDEVABC2222"
+	},
+	[2] =
+	{
+		.size = 512,
+		.perm = RDWR,
+		.serial_number = "PCDEVABC3333"
+	},
+	[3] =
+	{
+		.size = 512,
+		.perm = RDWR,
+		.serial_number = "PCDEVABC3333"
 	}
 	
 };
-
-void pcdev_release(struct device * dev)
-{
-	pr_info("Device released.\n");
-}
 
 /*Create 2 platform devices*/
 struct platform_device platform_pcdev_1 = {
@@ -53,11 +62,48 @@ struct platform_device platform_pcdev_2 = {
 
 };
 
+struct platform_device platform_pcdev_3 = {
+	.name = "pseudo-char-device",
+	.id = 3,
+	.dev = 
+	{
+		.platform_data = &pcdev_pdata[2],
+		.release = pcdev_release
+	}
+
+};
+
+struct platform_device platform_pcdev_4 = {
+	.name = "pseudo-char-device",
+	.id = 4,
+	.dev = 
+	{
+		.platform_data = &pcdev_pdata[4],
+		.release = pcdev_release
+	}
+
+};
+
+struct platform_device * platform_devs_arr[4] =
+{
+	&platform_pcdev_1,
+	&platform_pcdev_2,
+	&platform_pcdev_3,
+	&platform_pcdev_4
+};
+
+void pcdev_release(struct device * dev)
+{
+	pr_info("Device released.\n");
+}
+
 static int __init pcdev_platform_init(void)
 {
 	/*Register platform devices*/
-	platform_device_register(&platform_pcdev_1);
-	platform_device_register(&platform_pcdev_2);
+	//platform_device_register(&platform_pcdev_1);
+	//platform_device_register(&platform_pcdev_2);
+	/*Add all devices in one function*/
+	platform_add_devices(platform_devs_arr,ARRAY_SIZE(platform_devs_arr));
 
 	pr_info("Module insterted.\n");
 
@@ -69,7 +115,8 @@ static void __exit pcdev_platform_exit(void)
 	/*Unregister platform devices*/
 	platform_device_unregister(&platform_pcdev_1);
 	platform_device_unregister(&platform_pcdev_2);	
-
+	platform_device_unregister(&platform_pcdev_3);
+	platform_device_unregister(&platform_pcdev_4);
 	pr_info("Module exit.\n");
 }
 
