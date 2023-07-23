@@ -10,7 +10,9 @@
 #include <linux/errno.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/mod_devicetable.h>
 #include "platform.h"
+
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mohamed Ahmed");
@@ -76,6 +78,25 @@ struct file_operations pcd_fops =
 	.owner = THIS_MODULE
 };
 
+struct platform_device_id pcdev_ids[4] =
+{	
+	[0]
+	{
+		.name = "pcdev-A1x",
+	},
+	[1]
+	{
+		.name = "pcdev-B1x",
+	},
+	[2]
+	{
+		.name = "pcdev-C1x",
+	},
+	[3]
+	{
+		.name = "pcdev-D1x",
+	}
+};
 
 /*Global structure which members will be filled in the init function*/
 struct pcdrv_private_data  pcdrv_data;
@@ -188,6 +209,8 @@ int pcd_platform_driver_remove(struct platform_device * plat_dev)
 
 struct platform_driver pcd_platform_driver = 
 {
+
+	.id_table = pcdev_ids,
 	.probe = pcd_platform_driver_probe,
 	.remove = pcd_platform_driver_remove,
 	.driver = 
