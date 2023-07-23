@@ -17,6 +17,9 @@ MODULE_AUTHOR("Mohamed Ahmed");
 MODULE_DESCRIPTION("Platform driver");
 MODULE_INFO(item1,"This is free form info about the platform driver.");
 
+#undef pr_fmt
+#define pr_fmt(fmt) "%s : " fmt,__func__
+
 #define MAX_DEVICES 10
 
 /*Device private data structure*/
@@ -205,6 +208,10 @@ static int __init pcd_platform_driver_init(void)
 		{
 			pr_err("Alloc chrdev failed.\n");
 			return ret;
+		}
+		else
+		{
+			pr_info("Major number is %d\n",MAJOR(pcdrv_data.device_number_base));
 		}
 	/*2. Create device class under /sys/class*/
 	pcdrv_data.class_pcd = class_create(THIS_MODULE,"pcd-class");
