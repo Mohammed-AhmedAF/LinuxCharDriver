@@ -78,23 +78,64 @@ struct file_operations pcd_fops =
 	.owner = THIS_MODULE
 };
 
+struct device_config 
+{
+	int config_item1;
+	int config_item2;
+};
+
+enum pcdev_names
+{
+	PCDEVA1X,
+	PCDEVB1X,
+	PCDEVC1X,
+	PCDEVD1X
+};
+
+struct device_config configs[4] =
+{
+	[PCDEVA1X] = {
+		.config_item1 = 60,
+		.config_item2 = 21
+	},
+	[PCDEVB1X] =
+	{
+		.config_item1 = 50,
+		.config_item2 = 22
+	},
+	[PCDEVC1X] =
+	{
+		.config_item1 = 40,
+		.config_item2 = 23
+	},
+	[PCDEVD1X] =
+	{
+		.config_item1 = 30,
+		.config_item2 = 24
+	}
+};
+
 struct platform_device_id pcdev_ids[4] =
 {	
 	[0]
 	{
 		.name = "pcdev-A1x",
+		.driver_data = PCDEVA1X
 	},
 	[1]
 	{
 		.name = "pcdev-B1x",
+		.driver_data = PCDEVB1X
 	},
 	[2]
 	{
 		.name = "pcdev-C1x",
+		.driver_data = PCDEVC1X
 	},
 	[3]
 	{
 		.name = "pcdev-D1x",
+		.driver_data = PCDEVD1X
 	}
 };
 
