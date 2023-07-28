@@ -58,6 +58,8 @@ ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * 
 ssize_t pcd_write(struct file * filp, const char __user * buff, size_t count, loff_t * f_pos)
 {
 
+	/*Lock mutex*/
+	mutx_lock(&pcd_mutex);
     pr_info("Write requested for %zu bytes.\n",count);
     pr_info("Current file position is %lld\n",*f_pos);
 
@@ -81,6 +83,8 @@ ssize_t pcd_write(struct file * filp, const char __user * buff, size_t count, lo
     /*Update file position*/
     *f_pos += count;
 
+	/*Release the mutex*/
+	mutex_unlock(&pcd_mutex);
 
     /*Return number of bytes successfully written*/
     return count;
