@@ -32,6 +32,7 @@ ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * 
     /*Copy to user*/
     /*Note: Global variables access should be serialized to prevent race conditions*/
     /*copy_to_user should return zero for success*/
+	
     if(copy_to_user(buff,&device_buffer[*f_pos],count))
     {
         return -EFAULT;
@@ -195,6 +196,8 @@ static int __init hellodriver_init(void)
 	}
 
     printk("Module init was successful.");
+
+	return 0;
 
 class_del:
 	class_destroy(class_pcd);
