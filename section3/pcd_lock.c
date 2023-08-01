@@ -11,6 +11,10 @@
 #include <linux/spinlock.h>
 #include <linux/mutex.h>
 
+#undef pr_fmt
+#define pr_fmt(fmt) "%s : " fmt,__func__
+
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mohamed Ahmed");
 MODULE_DESCRIPTION("A test driver");
@@ -21,7 +25,7 @@ char device_buffer[DEV_MEM_SIZE];
 dev_t device_number;
 
 struct cdev pcd_cdev;
-/**/
+/*Mutex*/
 static DEFINE_MUTEX(pcd_mutex);
 
 ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * f_pos)
@@ -59,7 +63,7 @@ ssize_t pcd_write(struct file * filp, const char __user * buff, size_t count, lo
 {
 
 	/*Lock mutex*/
-	mutx_lock(&pcd_mutex);
+	mutex_lock(&pcd_mutex);
     pr_info("Write requested for %zu bytes.\n",count);
     pr_info("Current file position is %lld\n",*f_pos);
 
@@ -160,7 +164,7 @@ struct file_operations pcd_fops =
 struct class *  class_pcd;
 struct device * device_pcd;
 
-static int __init hellodriver_init(void)
+static int __init pcd_lock_init(void)
 {
 	int ret;
     /*Dynamically allocate a device number*/
@@ -186,6 +190,7 @@ static int __init hellodriver_init(void)
     printk("Hello from module.\r\n");
 
     /*Create device class under /sys/class*/
+	pr_info("Executing class_create");
     class_pcd = class_create(THIS_MODULE,"pcd_class");
 	if (IS_ERR(class_pcd))
 	{
@@ -196,6 +201,7 @@ static int __init hellodriver_init(void)
 	}
 
     /*Populate SYSFS with device information*/
+	pr_info("Executing device_create");
     device_pcd = device_create(class_pcd,NULL,device_number,NULL,"pcd");
 	if (IS_ERR(device_pcd))
 	{
@@ -206,6 +212,8 @@ static int __init hellodriver_init(void)
 	}
 
     printk("Module init was successful.");
+
+	return 0;
 
 class_del:
 	class_destroy(class_pcd);
@@ -220,7 +228,7 @@ out:
     return 0;
 }
 
-static void __exit pcd_driver_cleanup(void)
+static void __exit pcd_lock_cleanup(void)
 {
     printk("Exiting module PCD.\r\n");
 
@@ -231,5 +239,5 @@ static void __exit pcd_driver_cleanup(void)
 }
 
 
-module_init(hellodriver_init);
-module_exit(pcd_driver_cleanup);
+module_init(pcd_lock_init);
+module_exit(pcd_lock_cleanup);
