@@ -21,6 +21,7 @@ MODULE_DESCRIPTION("A test driver");
 char device_buffer[DEV_MEM_SIZE];
 dev_t device_number;
 
+struct device * device_pcd;
 struct cdev pcd_cdev;
 
 ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * f_pos)
@@ -143,13 +144,16 @@ int pcd_release(struct inode * inode, struct file * filp)
 ssize_t max_size_show (struct device * dev, struct device_attribute * attr, char * buff)
 {
 	/*Get access to device's private data*/
+	struct pcd_private_data * dev_data = (struct pcd_private_data *) dev_get_drvdata(dev);
 
-	return 0;
+	/*Store the value into the buffer*/
+	return sprintf(buff,"%d\n",dev_data->max_size);
 }
 
 ssize_t serial_number_show (struct device * dev, struct device_attribute * attr, char * buff)
 {
-	return 0;
+	struct pcd_private_data * dev_data = (struct pcd_private_data *) dev_get_drvdata(dev);
+	return sprintf(buff,"%s\n",dev_data->serial_number);
 }
 
 ssize_t max_size_store (struct device *dev, struct device_attribute *attr,
@@ -180,7 +184,7 @@ int pcd_sysfs_create_files(struct device * pcd_dev)
 	}
 	else
 	{
-		pr_info("SysFS files created");
+		pr_info("max_size SysFS file created");
 	}
 	ret = sysfs_create_file(&pcd_dev->kobj,&dev_attr_serial_number.attr);
 	if (ret < 0)
@@ -190,7 +194,7 @@ int pcd_sysfs_create_files(struct device * pcd_dev)
 	}
 	else
 	{
-		pr_info("SysFS files created.");
+		pr_info("serial_bumber SysFS file created.");
 		
 	}
 	return ret;
@@ -209,8 +213,7 @@ struct file_operations pcd_fops =
 };
 
 struct class *  class_pcd;
-struct device * device_pcd;
-struct pcd_private_data prdata1 =  {.max_size=124,.serial_number="XYZ121"};
+struct pcd_private_data prdata1 =  {.max_size=512,.serial_number="XYZ121"};
 struct pcd_private_data * readDevPrvData;
 
 static int __init pcd_init(void)
