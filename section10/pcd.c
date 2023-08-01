@@ -8,6 +8,7 @@
 #include <linux/kdev_t.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
+#include "pcd.h"
 
 #undef pr_fmt
 #define pr_fmt(fmt) "%s : " fmt,__func__
@@ -21,7 +22,6 @@ char device_buffer[DEV_MEM_SIZE];
 dev_t device_number;
 
 struct cdev pcd_cdev;
-
 
 ssize_t pcd_read(struct file * filp, char __user * buff, size_t count, loff_t * f_pos)
 {
@@ -142,6 +142,7 @@ int pcd_release(struct inode * inode, struct file * filp)
 
 ssize_t max_size_show (struct device * dev, struct device_attribute * attr, char * buff)
 {
+	/*Get access to device's private data*/
 
 	return 0;
 }
@@ -209,6 +210,8 @@ struct file_operations pcd_fops =
 
 struct class *  class_pcd;
 struct device * device_pcd;
+struct pcd_private_data prdata1 =  {.max_size=124,.serial_number="XYZ121"};
+struct pcd_private_data * readDevPrvData;
 
 static int __init pcd_init(void)
 {
@@ -256,13 +259,23 @@ static int __init pcd_init(void)
 	}
 	else
 	{
-
+	
     	printk("Module init was successful.");
+
+		/*Set private data*/
+		dev_set_drvdata(device_pcd,&prdata1);
+
 		ret = pcd_sysfs_create_files(device_pcd);
 		if (ret != 0)
 		{
 			pr_info("Failed to create device attributes");
 		}
+
+		/*Read device private data*/
+		readDevPrvData = (struct pcd_private_data*) dev_get_drvdata(device_pcd);
+		pr_info("Max size read from private data is %d\n",readDevPrvData->max_size);
+		pr_info("Serial number read from private data is %s\n",readDevPrvData->serial_number);
+
 		return 0;
 	}
 class_del:
