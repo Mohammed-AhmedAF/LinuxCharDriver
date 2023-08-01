@@ -176,6 +176,7 @@ static int __init hellodriver_init(void)
     printk("Hello from module.\r\n");
 
     /*Create device class under /sys/class*/
+	pr_info("Executing class_create");
     class_pcd = class_create(THIS_MODULE,"pcd_class");
 	if (IS_ERR(class_pcd))
 	{
@@ -186,6 +187,7 @@ static int __init hellodriver_init(void)
 	}
 
     /*Populate SYSFS with device information*/
+	pr_info("Executing device_create");
     device_pcd = device_create(class_pcd,NULL,device_number,NULL,"pcd");
 	if (IS_ERR(device_pcd))
 	{
