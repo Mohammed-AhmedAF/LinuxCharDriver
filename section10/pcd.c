@@ -8,6 +8,7 @@
 #include <linux/kdev_t.h>
 #include <linux/uaccess.h>
 #include <linux/errno.h>
+#include <linux/kernel.h>
 #include "pcd.h"
 
 #undef pr_fmt
@@ -158,18 +159,43 @@ ssize_t max_size_show (struct device * dev, struct device_attribute * attr, char
 ssize_t serial_number_show (struct device * dev, struct device_attribute * attr, char * buff)
 {
 	struct pcd_private_data * dev_data = (struct pcd_private_data *) dev_get_drvdata(dev);
+	/*Returns the number of bytes copied into the buffer or an error code*/
 	return sprintf(buff,"%s\n",dev_data->serial_number);
 }
 
 ssize_t max_size_store (struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
 {
-	return 0;
+	long result;
+	int ret;
+	struct pcd_private_data * dev_data = (struct pcd_private_data*) dev_get_drvdata(dev);	
 
+	/*pr_info for debugging purposes*/
+	pr_info("In max_size store\n");
+
+	ret = kstrtol(buf,10,&result);
+	if (ret)
+	{
+		pr_info("Failed to store max_size\n");
+		return ret;
+	}
+	else
+	{
+		pr_info("Stored new value for max_size successfully\n");
+		/*Maxs size changed via store method*/
+		dev_data->max_size = result;
+		
+		return count;
+	}
 }
 
 ssize_t serial_number_store (struct device * dev, struct device_attribute * attr, const char * buf, size_t count)
 {
+	struct pcd_private_data * dev_data	= (struct pcd_private_data *) dev_get_drvdata(dev);
+
+	pr_info("In serial_number store\n");
+	dev_data->serial_number = buf;
+
 	return 0;
 }
 
